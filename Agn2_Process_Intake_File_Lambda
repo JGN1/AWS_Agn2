@@ -72,4 +72,16 @@ def lambda_handler(event, context):
          print(e)
          print("Unable to insert data into DynamoDB table".format(e))
     # Finished!
+
+    # Add Data to SQS Archive Queue on completion
+    sqs = boto3.client('sqs')
+    sqs.send_message(
+        QueueUrl="https://sqs.us-east-1.amazonaws.com/592910748730/Agn2_LRE_Archive_SQS",
+        MessageBody=json.dumps(s3event)
+    )
+    return {
+        'statusCode': 200,
+        'body': json.dumps(s3event)
+    }
+
     return bucket
