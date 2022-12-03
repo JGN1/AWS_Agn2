@@ -1,0 +1,75 @@
+# Load-Inventory Lambda function
+#
+# This function is triggered by an object being created in an Amazon S3 bucket, 
+# which triggers an SNS event which is in turn consumed by SQS queue. This Lambda
+# is subscribed to this queue and is triggered upon addition of a message to the
+# queue. The file is downloaded from the S3 Intake bucket and each line is 
+# inserted into a DynamoDB table.
+
+import json, urllib, boto3, csv
+# Connect to S3 and DynamoDB
+s3 = boto3.resource('s3')
+dynamodb = boto3.resource('dynamodb')
+# Connect to the DynamoDB tables
+summaryTransTable = dynamodb.Table('Agn2_LRE_Data_DynamoDB_Table');
+
+# This handler is run every time the Lambda function is triggered
+def lambda_handler(event, context):
+  # Show the incoming event in the debug log
+  print("Event received by Lambda function: " + json.dumps(event, indent=2))
+  
+  #Add this for loggin and debugging
+  for obj in event['Records']:
+        print("Record Contents for Debugging Purposes")
+        payload = obj['body']   
+        print("Payload: ")
+        print (str(payload))
+    
+  # Get the bucket and object key from the Event
+  s3event = json.loads(event['Records'][0]['body'])
+  s3event = json.loads(s3event['Message'])
+  bucket = s3event['Records'][0]['s3']['bucket']['name']
+  key = urllib.parse.unquote_plus(s3event['Records'][0]['s3']['object']['key'])
+  localFilename = '/tmp/inventory.txt'
+  # Download the file from S3 to the local filesystem
+  print("================Bucket:")
+  print(str(bucket))
+  print("================Key:")
+  print(str(key))
+  try:
+    s3.meta.client.download_file(bucket, key, localFilename)
+  except Exception as e:
+    print(e)
+    print('Error getting object {} from bucket {}. Make sure they exist and your bucket is in the same region as this function.'.format(key, bucket))
+    raise e
+
+  # Read the Inventory CSV file
+  with open(localFilename) as csvfile:
+    reader = csv.DictReader(csvfile, delimiter=',')
+    # Read each row in the file
+    rowCount = 0
+    for row in reader:
+      rowCount += 1
+      # Show the row in the debug log
+      print(row['RunID'], row['RunDate'], row['Scenario'], row['Application'], row['Transaction Name'], row['Minimum'], row['Average'], row['Maximum'], row['Std. Deviation'], row['90 Percent'], row['Pass'], row['Fail'], row['Stop'])
+      try:
+        # Insert Store, Item and Count into the Inventory table
+        summaryTransTable.put_item(
+          Item={
+            'RunID':  row['RunID'],
+            'RunDate':  row['RunDate'],
+            'Scenario':   row['Scenario'],
+            'Transaction Name':   row['Transaction Name'],
+            'Minimum':   row['Minimum'],
+            'Average':   row['Average'],
+            'Maximum':   row['Maximum'],
+            'Std. Deviation':   row['Std. Deviation'],
+            '90 Percent':   row['90 Percent'],
+            'Pass':   row['Pass'],
+            'Fail':   row['Fail'],
+            'Stop':   row['Stop']})
+      except Exception as e:
+         print(e)
+         print("Unable to insert data into DynamoDB table".format(e))
+    # Finished!
+    return bucket

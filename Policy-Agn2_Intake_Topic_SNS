@@ -1,0 +1,57 @@
+{
+  "Version": "2008-10-17",
+  "Id": "__default_policy_ID",
+  "Statement": [
+    {
+      "Sid": "__default_statement_ID",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "*"
+      },
+      "Action": [
+        "SNS:GetTopicAttributes",
+        "SNS:SetTopicAttributes",
+        "SNS:AddPermission",
+        "SNS:RemovePermission",
+        "SNS:DeleteTopic",
+        "SNS:Subscribe",
+        "SNS:ListSubscriptionsByTopic",
+        "SNS:Publish"
+      ],
+      "Resource": "arn:aws:sns:us-east-1:592910748730:Agn2_Intake_Topic_SNS",
+      "Condition": {
+        "StringEquals": {
+          "AWS:SourceOwner": "592910748730"
+        }
+      }
+    },
+    {
+      "Sid": "__S3_Write",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "s3.amazonaws.com"
+      },
+      "Action": "SNS:Publish",
+      "Resource": "arn:aws:sns:us-east-1:592910748730:Agn2_Intake_Topic_SNS",
+      "Condition": {
+        "StringLike": {
+          "aws:SourceArn": "arn:aws:s3:::agn2-*"
+        }
+      }
+    },
+    {
+      "Sid": "__SQS_Subscribe",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "sqs.amazonaws.com"
+      },
+      "Action": "SNS:Subscribe",
+      "Resource": "arn:aws:sns:us-east-1:592910748730:Agn2_Intake_Topic_SNS",
+      "Condition": {
+        "StringLike": {
+          "aws:SourceArn": "arn:aws:sqs:us-east-1:592910748730:Agn2_*"
+        }
+      }
+    }
+  ]
+}

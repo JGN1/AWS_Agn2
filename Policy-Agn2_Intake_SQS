@@ -1,0 +1,24 @@
+{
+  "Version": "2008-10-17",
+  "Id": "__default_policy_ID",
+  "Statement": [
+    {
+      "Sid": "__owner_statement",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::592910748730:root"
+      },
+      "Action": "SQS:*",
+      "Resource": "arn:aws:sqs:us-east-1:592910748730:Agn2_Intake_SQS"
+    },
+    {
+      "Sid": "allow_sns_message",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "sns.amazonaws.com"
+      },
+      "Action": "SQS:*",
+      "Resource": "arn:aws:sqs:us-east-1:592910748730:Agn2_Intake_SQS"
+    }
+  ]
+}
